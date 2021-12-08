@@ -64,7 +64,7 @@ spec:
         - name: {{ .Chart.Name }}
           image: {{ .Values.issassist.backend.image.repository }}:{{ .Values.issassist.backend.image.tag }}
           imagePullPolicy: {{ .Values.issassist.backend.image.pullPolicy }}
-          command: ["./start-django.sh"]
+          command: ["/src/start-django.sh"]
           ports:
             - name: django-port
               containerPort: 8000
