@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "issassist.fullname" . }}
+  labels:
+    {{- include "issassist.labels" . | nindent 4 }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.issassist.backend.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "issassist.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "issassist.selectorLabels" . | nindent 8 }}
+    spec:
+      volumes:
+        - name: nginx-conf
+          configMap:
+            name: {{ include "issassist.name" . }}-sites-enabled-configmap
+        - name: staticfiles
+          emptyDir: {}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "issassist.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      containers:
+        - name: nginx
+          image: {{ .Values.issassist.frontend.image.repository }}:{{ .Values.issassist.frontend.image.tag }}
+          imagePullPolicy: {{ .Values.issassist.frontend.image.pullPolicy }}
+          ports:
+            - name: nginx
+              containerPort: {{ .Values.issassist.frontend.service.port }}
+              protocol: TCP
+          volumeMounts:
+            - name: nginx-conf
+              mountPath: /etc/nginx/conf.d/
+            - name: staticfiles
+              mountPath: /src/static_root
+          readinessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.issassist.frontend.service.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          livenessProbe:
+            httpGet:
+              path: /
+              port: {{ .Values.issassist.frontend.service.port }}
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          resources:
+            {{- toYaml .Values.issassist.frontend.resources | nindent 12 }}
+
+        - name: {{ .Chart.Name }}
+          image: {{ .Values.issassist.backend.image.repository }}:{{ .Values.issassist.backend.image.tag }}
+          imagePullPolicy: {{ .Values.issassist.backend.image.pullPolicy }}
+          command: ["./start-django.sh"]
+          ports:
+            - name: django-port
+              containerPort: 8000
+              protocol: TCP
+          envFrom:
+            - secretRef:
+                name: {{ include "issassist.name" . }}-env
+            - configMapRef:
+                name: {{ include "issassist.name" . }}-env-db
+          volumeMounts:
+            - name: staticfiles
+              mountPath: /src/static_root
+          resources:
+            {{- toYaml .Values.issassist.backend.resources | nindent 12 }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

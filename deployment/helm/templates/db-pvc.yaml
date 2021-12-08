@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "issassist.name" . }}-{{ .Values.issassist.db.hostname }}-pvc
+  labels:
+    {{- include "issassist.labels" . | nindent 4 }}
+spec:
+  storageClassName: {{ .Values.issassist.db.storageClassName }}
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
