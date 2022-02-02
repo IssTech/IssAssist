@@ -1,11 +1,12 @@
+# PostgreSQL StatefulSet
 apiVersion: apps/v1
-kind: Deployment
-metadata:
+kind: StatefulSet
 metadata:
   name: {{ include "issassist.fullname" . }}-db
   labels:
     {{- include "issassist.labels" . | nindent 4 }}
 spec:
+  serviceName: postgresql-db-service
   selector:
     matchLabels:
       {{- include "issassist.selectorLabels" . | nindent 6 }}
@@ -19,11 +20,6 @@ spec:
       labels:
         {{- include "issassist.selectorLabels" . | nindent 8 }}
     spec:
-      volumes:
-        - name: db-data
-          persistentVolumeClaim:
-            claimName: {{ include "issassist.name" . }}-{{ .Values.issassist.db.hostname }}-pvc
-
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
@@ -97,3 +93,12 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+      # Volume Claim
+  volumeClaimTemplates:
+  - metadata:
+      name: db-data
+    spec:
+      accessModes: ["ReadWriteOnce"]
+      resources:
+        requests:
+          storage: 2Gi

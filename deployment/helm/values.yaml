@@ -48,7 +48,7 @@ issassist:
     hostname: db
     image:
       repository: postgres
-      tag: 14
+      tag: 14.1
       pullPolicy: IfNotPresent
     service:
       type: ClusterIP
