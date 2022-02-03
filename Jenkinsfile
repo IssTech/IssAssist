@@ -11,7 +11,7 @@ pipeline {
       spec:
         containers:
         - name: jnlp
-          image: jenkins/inbound-agent:latest
+          image: jenkins/inbound-agent:4.11-1
         - name: python
           image: python:3
           imagePullPolicy: IfNotPresent
